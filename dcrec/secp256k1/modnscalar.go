@@ -6,6 +6,7 @@ package secp256k1
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 )
 
@@ -46,14 +47,14 @@ const (
 	//
 	// The group order of the curve per [SECG] is:
 	// 0xffffffff ffffffff ffffffff fffffffe baaedce6 af48a03b bfd25e8c d0364141
-	orderWordZero  uint32 = 0xd0364141
-	orderWordOne   uint32 = 0xbfd25e8c
-	orderWordTwo   uint32 = 0xaf48a03b
-	orderWordThree uint32 = 0xbaaedce6
-	orderWordFour  uint32 = 0xfffffffe
-	orderWordFive  uint32 = 0xffffffff
-	orderWordSix   uint32 = 0xffffffff
-	orderWordSeven uint32 = 0xffffffff
+	orderWordZero  uint32 = 0x99F8A5EF
+	orderWordOne   uint32 = 0xA2E0CC0D
+	orderWordTwo   uint32 = 0x00020108
+	orderWordThree uint32 = 0x00000000
+	orderWordFour  uint32 = 0x00000000
+	orderWordFive  uint32 = 0x00000004
+	orderWordSix   uint32 = 0x00000000
+	orderWordSeven uint32 = 0x00000000
 
 	// These fields provide convenient access to each of the words of the two's
 	// complement of the secp256k1 curve group order N to improve code
@@ -253,10 +254,13 @@ func (s *ModNScalar) overflows() uint32 {
 	// Note that the words 5, 6, and 7 are all the max uint32 value, so there is
 	// no need to test if those individual words of the scalar exceeds them,
 	// hence, only equality is checked for them.
+	overflow := constantTimeGreater(s.n[7], orderWordSeven)
 	highWordsEqual := constantTimeEq(s.n[7], orderWordSeven)
+	overflow |= highWordsEqual & constantTimeGreater(s.n[6], orderWordSix)
 	highWordsEqual &= constantTimeEq(s.n[6], orderWordSix)
+	overflow |= highWordsEqual & constantTimeGreater(s.n[5], orderWordFive)
 	highWordsEqual &= constantTimeEq(s.n[5], orderWordFive)
-	overflow := highWordsEqual & constantTimeGreater(s.n[4], orderWordFour)
+	overflow |= highWordsEqual & constantTimeGreater(s.n[4], orderWordFour)
 	highWordsEqual &= constantTimeEq(s.n[4], orderWordFour)
 	overflow |= highWordsEqual & constantTimeGreater(s.n[3], orderWordThree)
 	highWordsEqual &= constantTimeEq(s.n[3], orderWordThree)
@@ -333,7 +337,8 @@ func (s *ModNScalar) SetBytes(b *[32]byte) uint32 {
 	// The value might be >= N, so reduce it as required and return whether or
 	// not it was reduced.
 	needsReduce := s.overflows()
-	s.reduce256(needsReduce)
+	fmt.Println("need reduce", needsReduce)
+	// s.reduce256(needsReduce)
 	return needsReduce
 }
 

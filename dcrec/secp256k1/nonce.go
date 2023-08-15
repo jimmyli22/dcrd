@@ -8,7 +8,10 @@ package secp256k1
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"hash"
+	"math/big"
 )
 
 // References:
@@ -120,7 +123,8 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	// version.  Create a fixed-size array to avoid extra allocs and slice it
 	// properly.
 	const (
-		privKeyLen = 32
+		privKeyLen = 21
+		mhashLen   = 21
 		hashLen    = 32
 		extraLen   = 32
 		versionLen = 16
@@ -132,13 +136,14 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	if len(privKey) > privKeyLen {
 		privKey = privKey[:privKeyLen]
 	}
-	if len(hash) > hashLen {
+	if len(hash) > mhashLen {
 		hash = hash[:hashLen]
 	}
 	offset := privKeyLen - len(privKey) // Zero left padding if needed.
 	offset += copy(keyBuf[offset:], privKey)
-	offset += hashLen - len(hash) // Zero left padding if needed.
+	offset += mhashLen - len(hash) // Zero left padding if needed.
 	offset += copy(keyBuf[offset:], hash)
+	fmt.Println("offset", offset)
 	if len(extra) == extraLen {
 		offset += copy(keyBuf[offset:], extra)
 		if len(version) == versionLen {
@@ -151,6 +156,7 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 		offset += copy(keyBuf[offset:], version)
 	}
 	key := keyBuf[:offset]
+	fmt.Println("hex K:", hex.EncodeToString(key))
 
 	// Step B.
 	//
@@ -184,6 +190,7 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	hasher.Write(singleZero[:])
 	hasher.Write(key)
 	k = hasher.Sum()
+	fmt.Println("K after step d", hex.EncodeToString(k))
 
 	// Step E.
 	//
@@ -191,6 +198,7 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	hasher.ResetKey(k)
 	hasher.Write(v)
 	v = hasher.Sum()
+	fmt.Println("V after step e", hex.EncodeToString(v))
 
 	// Step F.
 	//
@@ -203,6 +211,7 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	hasher.Write(singleOne[:])
 	hasher.Write(key[:])
 	k = hasher.Sum()
+	fmt.Println("K after step f", hex.EncodeToString(k))
 
 	// Step G.
 	//
@@ -210,11 +219,13 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 	hasher.ResetKey(k)
 	hasher.Write(v)
 	v = hasher.Sum()
+	fmt.Println("V after step g", hex.EncodeToString(v))
 
 	// Step H.
 	//
 	// Repeat until the value is nonzero and less than the curve order.
 	var generated uint32
+	count := 0
 	for {
 		// Step H1 and H2.
 		//
@@ -228,20 +239,29 @@ func NonceRFC6979(privKey []byte, hash []byte, extra []byte, version []byte, ext
 		// Note that because the hash function output is the same length as the
 		// private key in this optimized implementation, there is no need to
 		// loop or create an intermediate T.
+		count++
 		hasher.Reset()
 		hasher.Write(v)
 		v = hasher.Sum()
+		fmt.Println("round", count)
+		fmt.Println("T", hex.EncodeToString(v))
+
+		// k = bits2int(T)
+		inInt := big.NewInt(0).SetBytes(v)
+		kbit := big.NewInt(0).Div(inInt, big.NewInt(0).Exp(big.NewInt(2), big.NewInt(256-163), nil))
+		kk := kbit.Bytes()
+
+		fmt.Println("k", hex.EncodeToString(kk))
 
 		// Step H3.
-		//
-		// k = bits2int(T)
 		// If k is within the range [1,q-1], return it.
 		//
 		// Otherwise, compute:
 		// K = HMAC_K(V || 0x00)
 		// V = HMAC_K(V)
 		var secret ModNScalar
-		overflow := secret.SetByteSlice(v)
+		overflow := secret.SetByteSlice(kk)
+		fmt.Println("overflow", overflow)
 		if !overflow && !secret.IsZero() {
 			generated++
 			if generated > extraIterations {

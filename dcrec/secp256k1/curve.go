@@ -70,31 +70,31 @@ func hexToModNScalar(s string) *ModNScalar {
 }
 
 var (
-	// The following constants are used to accelerate scalar point
-	// multiplication through the use of the endomorphism:
-	//
-	// φ(Q) ⟼ λ*Q = (β*Q.x mod p, Q.y)
-	//
-	// See the code in the deriveEndomorphismParams function in genprecomps.go
-	// for details on their derivation.
-	//
-	// Additionally, see the scalar multiplication function in this file for
-	// details on how they are used.
-	endoNegLambda = hexToModNScalar("-5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72")
-	endoBeta      = hexToFieldVal("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee")
-	endoNegB1     = hexToModNScalar("e4437ed6010e88286f547fa90abfe4c3")
-	endoNegB2     = hexToModNScalar("-3086d221a7d46bcde86c90e49284eb15")
-	endoZ1        = hexToModNScalar("3086d221a7d46bcde86c90e49284eb153daa8a1471e8ca7f")
-	endoZ2        = hexToModNScalar("e4437ed6010e88286f547fa90abfe4c4221208ac9df506c6")
+// The following constants are used to accelerate scalar point
+// multiplication through the use of the endomorphism:
+//
+// φ(Q) ⟼ λ*Q = (β*Q.x mod p, Q.y)
+//
+// See the code in the deriveEndomorphismParams function in genprecomps.go
+// for details on their derivation.
+//
+// Additionally, see the scalar multiplication function in this file for
+// details on how they are used.
+// endoNegLambda = hexToModNScalar("-5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72")
+// endoBeta      = hexToFieldVal("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee")
+// endoNegB1     = hexToModNScalar("e4437ed6010e88286f547fa90abfe4c3")
+// endoNegB2     = hexToModNScalar("-3086d221a7d46bcde86c90e49284eb15")
+// endoZ1        = hexToModNScalar("3086d221a7d46bcde86c90e49284eb153daa8a1471e8ca7f")
+// endoZ2        = hexToModNScalar("e4437ed6010e88286f547fa90abfe4c4221208ac9df506c6")
 
-	// Alternatively, the following parameters are valid as well, however,
-	// benchmarks show them to be about 2% slower in practice.
-	// endoNegLambda = hexToModNScalar("-ac9c52b33fa3cf1f5ad9e3fd77ed9ba4a880b9fc8ec739c2e0cfc810b51283ce")
-	// endoBeta      = hexToFieldVal("851695d49a83f8ef919bb86153cbcb16630fb68aed0a766a3ec693d68e6afa40")
-	// endoNegB1     = hexToModNScalar("3086d221a7d46bcde86c90e49284eb15")
-	// endoNegB2     = hexToModNScalar("-114ca50f7a8e2f3f657c1108d9d44cfd8")
-	// endoZ1        = hexToModNScalar("114ca50f7a8e2f3f657c1108d9d44cfd95fbc92c10fddd145")
-	// endoZ2        = hexToModNScalar("3086d221a7d46bcde86c90e49284eb153daa8a1471e8ca7f")
+// Alternatively, the following parameters are valid as well, however,
+// benchmarks show them to be about 2% slower in practice.
+// endoNegLambda = hexToModNScalar("-ac9c52b33fa3cf1f5ad9e3fd77ed9ba4a880b9fc8ec739c2e0cfc810b51283ce")
+// endoBeta      = hexToFieldVal("851695d49a83f8ef919bb86153cbcb16630fb68aed0a766a3ec693d68e6afa40")
+// endoNegB1     = hexToModNScalar("3086d221a7d46bcde86c90e49284eb15")
+// endoNegB2     = hexToModNScalar("-114ca50f7a8e2f3f657c1108d9d44cfd8")
+// endoZ1        = hexToModNScalar("114ca50f7a8e2f3f657c1108d9d44cfd95fbc92c10fddd145")
+// endoZ2        = hexToModNScalar("3086d221a7d46bcde86c90e49284eb153daa8a1471e8ca7f")
 )
 
 // JacobianPoint is an element of the group formed by the secp256k1 curve in
@@ -901,10 +901,10 @@ func splitK(k *ModNScalar) (ModNScalar, ModNScalar) {
 	// k2 = c1*(-b1) + c2*(-b2)
 	// k1 = k + k2*(-λ)
 	var k1, k2 ModNScalar
-	c1 := mul512Rsh320Round(k, endoZ1)
-	c2 := mul512Rsh320Round(k, endoZ2)
-	k2.Add2(c1.Mul(endoNegB1), c2.Mul(endoNegB2))
-	k1.Mul2(&k2, endoNegLambda).Add(k)
+	// c1 := mul512Rsh320Round(k, endoZ1)
+	// c2 := mul512Rsh320Round(k, endoZ2)
+	// k2.Add2(c1.Mul(endoNegB1), c2.Mul(endoNegB2))
+	// k1.Mul2(&k2, endoNegLambda).Add(k)
 	return k1, k2
 }
 
@@ -1106,7 +1106,7 @@ func ScalarMultNonConst(k *ModNScalar, point, result *JacobianPoint) {
 	p1Neg.Y.Negate(1).Normalize()
 	p2, p2Neg := new(JacobianPoint), new(JacobianPoint)
 	p2.Set(p1)
-	p2.X.Mul(endoBeta).Normalize()
+	// p2.X.Mul(endoBeta).Normalize()
 	p2Neg.Set(p2)
 	p2Neg.Y.Negate(1).Normalize()
 
